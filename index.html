@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="SQ-LLaVA: Self-Questioning for Large Vision-Language Assistant">
+  <meta name="keywords" content="SQ-LLaVA, Visual Self-Questioning, Vision-Language Model, Instruction Tuning, LVLM, Prototype Extractor">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SQ-LLaVA: Self-Questioning for Large Vision-Language Assistant</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Lora:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+
+  <style>
+    :root {
+      --orange: #ea580c;
+      --orange-light: #fff7ed;
+      --orange-dark: #9a3412;
+      --surface: #fffbf5;
+      --text-main: #1c1917;
+      --text-body: #57534e;
+      --border: #d6d3d1;
+      --green: #16a34a;
+      --green-light: #dcfce7;
+      --blue-light: #dbeafe;
+      --blue-border: #2563eb;
+      --slate-light: #f1f5f9;
+    }
+
+    body { font-family: 'Outfit', sans-serif; color: var(--text-main); }
+
+    .publication-title {
+      font-family: 'Lora', serif !important;
+      font-weight: 700 !important;
+      letter-spacing: -0.02em;
+      line-height: 1.2 !important;
+    }
+    .title { font-family: 'Lora', serif !important; color: var(--text-main); }
+
+    .content p, .content li {
+      font-family: 'Outfit', sans-serif;
+      color: var(--text-body); line-height: 1.7; font-size: 0.96rem;
+    }
+
+    .section-bar {
+      width: 50px; height: 4px; background: var(--orange);
+      border-radius: 2px; margin: 0 auto 26px auto;
+    }
+
+    .venue-pill {
+      display: inline-block; background: var(--orange); color: white;
+      font-size: 0.82rem; font-weight: 700; padding: 5px 18px;
+      border-radius: 20px; letter-spacing: 0.04em; margin-top: 12px;
+    }
+
+    .org-logos {
+      display: flex; justify-content: center; align-items: center;
+      gap: 36px; flex-wrap: wrap; margin-top: 18px; margin-bottom: 10px;
+    }
+    .org-logos img {
+      height: 55px; object-fit: contain; opacity: 0.85; transition: opacity 0.2s;
+    }
+    .org-logos img:hover { opacity: 1; }
+
+    .callout {
+      border-radius: 10px; padding: 20px 24px; margin-bottom: 20px;
+      border-left: 4px solid; font-size: 0.94rem;
+    }
+    .callout.orange { background: var(--orange-light); border-color: var(--orange); }
+    .callout.green { background: var(--green-light); border-color: var(--green); }
+    .callout.blue { background: var(--blue-light); border-color: var(--blue-border); }
+    .callout p { margin-bottom: 0 !important; color: var(--text-main) !important; }
+    .callout .callout-label {
+      font-weight: 700; font-size: 0.78rem; text-transform: uppercase;
+      letter-spacing: 0.06em; margin-bottom: 5px; display: block;
+    }
+    .callout.orange .callout-label { color: var(--orange-dark); }
+    .callout.green .callout-label { color: #166534; }
+
+    .contrib-card {
+      background: white; border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px; height: 100%;
+      border-top: 3px solid var(--orange);
+    }
+    .contrib-card h4 {
+      font-family: 'Outfit', sans-serif !important; font-weight: 700 !important;
+      font-size: 1.05rem !important; margin-bottom: 10px !important;
+    }
+    .contrib-card p { font-size: 0.92rem; line-height: 1.6; }
+    .contrib-card .card-icon { font-size: 1.6rem; margin-bottom: 10px; display: block; }
+
+    .stage-block {
+      background: white; border: 1px solid var(--border);
+      border-radius: 12px; padding: 28px; margin-bottom: 28px;
+    }
+    .stage-block h3 {
+      font-family: 'Outfit', sans-serif !important; font-weight: 700 !important;
+      font-size: 1.15rem !important; margin-bottom: 14px !important;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .stage-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--orange); color: white;
+      font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+    }
+
+    .sq-table {
+      border-radius: 10px; overflow: hidden;
+      box-shadow: 0 2px 10px rgba(234,88,12,0.07);
+      border: 1px solid var(--border);
+    }
+    .sq-table table { margin-bottom: 0 !important; }
+    .sq-table thead th {
+      background: var(--text-main) !important; color: white !important;
+      font-weight: 600; font-size: 0.8rem; padding: 10px 8px;
+      border: none !important; text-align: center !important;
+    }
+    .sq-table thead th:first-child { text-align: left !important; }
+    .sq-table tbody td {
+      text-align: center; padding: 8px 8px;
+      font-size: 0.84rem; border-color: var(--border) !important;
+    }
+    .sq-table tbody td:first-child { text-align: left; font-weight: 500; }
+    .sq-table .ours-row { background: var(--orange-light) !important; }
+    .sq-table .ours-row td { font-weight: 600; color: var(--orange-dark); }
+    .sq-table .ref-row { background: #fafaf9; }
+    .sq-table .sep-row td { padding: 0; height: 2px; background: var(--border); }
+
+    .stat-row {
+      display: flex; justify-content: center; gap: 28px; flex-wrap: wrap; padding: 24px 0;
+    }
+    .stat-pill {
+      text-align: center; background: white; border: 1px solid var(--border);
+      border-radius: 12px; padding: 16px 24px;
+    }
+    .stat-pill .stat-num {
+      font-family: 'Lora', serif; font-size: 1.8rem; font-weight: 700;
+      color: var(--orange); line-height: 1.1;
+    }
+    .stat-pill .stat-desc { font-size: 0.8rem; color: var(--text-body); margin-top: 4px; }
+
+    .fig-box {
+      background: #fafafa; border: 1px dashed var(--border);
+      border-radius: 10px; padding: 16px; text-align: center;
+    }
+    .fig-box img { max-width: 100%; border-radius: 6px; }
+    .fig-cap {
+      font-size: 0.84rem; color: var(--text-body); margin-top: 10px;
+      line-height: 1.5; max-width: 85%; margin-left: auto; margin-right: auto;
+    }
+
+    pre {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 0.82rem !important; border-radius: 10px !important;
+      border: 1px solid var(--border) !important;
+    }
+    .hero.teaser .hero-body { padding-top: 0; }
+
+    @media (max-width: 768px) {
+      .stat-row { gap: 14px; }
+      .stat-pill { padding: 12px 16px; }
+      .stat-pill .stat-num { font-size: 1.4rem; }
+      .org-logos { gap: 20px; }
+      .org-logos img { height: 40px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ==================== HERO ==================== -->
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">SQ-LLaVA: Self-Questioning for Large<br>Vision-Language Assistant</h1>
+
+          <div class="venue-pill">ECCV 2024</div>
+
+          <div class="is-size-5 publication-authors" style="margin-top: 18px;">
+            <span class="author-block"><a href="https://github.com/heliossun">Guohao Sun</a><sup>1</sup>,</span>
+            <span class="author-block">Can Qin<sup>2</sup>,</span>
+            <span class="author-block">Jiamian Wang<sup>1</sup>,</span>
+            <span class="author-block">Zeyuan Chen<sup>2</sup>,</span>
+            <span class="author-block">Ran Xu<sup>2</sup>,</span>
+            <span class="author-block"><a href="https://ztao.cc/index.html">Zhiqiang Tao</a><sup>1</sup></span>
+          </div>
+
+          <div class="is-size-5 publication-authors" style="margin-top: 8px;">
+            <span class="author-block"><sup>1</sup>Rochester Institute of Technology,</span>
+            <span class="author-block"><sup>2</sup>Salesforce AI Research</span>
+          </div>
+
+          <div class="org-logos">
+            <img src="./static/images/logo_rit.png" alt="RIT">
+            <img src="./static/images/logo_salesforce.png" alt="Salesforce">
+          </div>
+
+          <div class="column has-text-centered" style="margin-top: 8px;">
+            <div class="publication-links">
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/2403.11299" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="ai ai-arxiv"></i></span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="https://github.com/heliossun/SQ-LLaVA" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fab fa-github"></i></span>
+                  <span>Code</span>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== TEASER ==================== -->
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <!-- TODO: Replace with Figure 1 from the paper (training comparison + radar chart).
+           Save as: ./static/images/teaser.png -->
+      <div class="fig-box">
+        <img src="./static/images/teaser.png" alt="SQ-LLaVA training comparison and performance radar">
+      </div>
+      <h2 class="subtitle has-text-centered" style="margin-top: 18px; font-size: 1.05rem; line-height: 1.6;">
+        <b>SQ-LLaVA</b> trains vision-language models to not only answer questions but also
+        <b>learn how to ask</b> them — leveraging the rich, overlooked context within visual
+        instruction data to achieve state-of-the-art performance on 9 out of 10 benchmarks.
+      </h2>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== KEY STATS ==================== -->
+<section class="section" style="padding: 20px 0 36px 0;">
+  <div class="container is-max-desktop">
+    <div class="stat-row">
+      <div class="stat-pill">
+        <div class="stat-num">9/10</div>
+        <div class="stat-desc">Benchmarks where SQ-LLaVA<br>outperforms prior methods</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-num">+17.2%</div>
+        <div class="stat-desc">Over LLaVA-v1.5 on<br>LLaVA-in-the-Wild</div>
+      </div>
+      <div class="stat-pill">
+        <div class="stat-num">Zero-shot</div>
+        <div class="stat-desc">Self-questioning without<br>in-context examples</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== ABSTRACT ==================== -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="section-bar"></div>
+        <div class="content has-text-justified">
+          <p>
+            Recent advances in vision-language models have shown notable generalization in broad
+            tasks through visual instruction tuning. However, bridging the gap between the
+            pre-trained vision encoder and the large language models (LLMs) becomes the whole
+            network's bottleneck. To improve cross-modality alignment, existing works usually
+            consider more visual instruction data covering a broader range of vision tasks to
+            fine-tune the model for question-answering, which, however, is costly to obtain and
+            has not thoroughly explored the rich contextual information contained in images.
+          </p>
+          <p>
+            This paper first attempts to harness the overlooked context within visual instruction
+            data, training the model to self-supervised <b>"learning" how to ask high-quality
+            questions</b>. In this way, we introduce a novel framework named <b>SQ-LLaVA:
+            Self-Questioning for Large Vision-Language Assistant</b>. SQ-LLaVA exhibits proficiency
+            in generating flexible and meaningful image-related questions while analyzing the
+            visual clue and prior language knowledge, signifying an advanced level of generalized
+            visual understanding.
+          </p>
+          <p>
+            Moreover, fine-tuning SQ-LLaVA on higher-quality instruction data shows a performance
+            improvement compared with traditional visual-instruction tuning methods. This
+            improvement highlights the efficacy of self-questioning techniques in achieving a
+            deeper and more nuanced comprehension of visual content across various contexts.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== MOTIVATION ==================== -->
+<section class="section" style="background: var(--surface);">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Key Insight: Questions Contain Rich Visual Context</h2>
+    <div class="section-bar"></div>
+
+    <div class="content has-text-justified" style="max-width: 800px; margin: 0 auto 20px auto;">
+      <p>
+        Existing visual instruction tuning methods focus solely on answer prediction, but
+        <b>questions often contain more image-related information than answers</b>. We
+        validated this by computing CLIPScore (higher = better visual-text relevance) for
+        all image-question and image-answer pairs across two major instruction datasets:
+      </p>
+    </div>
+
+    <div class="columns is-centered">
+      <div class="column is-5">
+        <div class="callout orange">
+          <span class="callout-label">LLaVA-Instruct Dataset</span>
+          <p>
+            Questions: &mu;<sub>q</sub> = <b>0.184</b><br>
+            Answers: &mu;<sub>a</sub> = 0.183<br>
+            Questions have higher visual relevance.
+          </p>
+        </div>
+      </div>
+      <div class="column is-5">
+        <div class="callout orange">
+          <span class="callout-label">ShareGPT4V-Instruct Dataset</span>
+          <p>
+            Questions: &mu;<sub>q</sub> = <b>0.186</b><br>
+            Answers: &mu;<sub>a</sub> = 0.184<br>
+            Questions have higher visual relevance.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TODO: Replace with Figure 2 from the paper (CLIPScore distributions + example questions).
+         Save as: ./static/images/clipscore.png -->
+    <div class="fig-box" style="max-width: 700px; margin: 16px auto 0 auto;">
+      <img src="./static/images/clipscore.png" alt="CLIPScore distribution comparison">
+    </div>
+    <p class="fig-cap has-text-centered">
+      <b>Figure 2:</b> Questions spread more samples around a higher mean CLIPScore than answers,
+      confirming that questions in visual instruction data carry rich, under-exploited visual context.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== CONTRIBUTIONS ==================== -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Key Contributions</h2>
+    <div class="section-bar"></div>
+
+    <div class="columns" style="margin-top: 12px;">
+      <div class="column is-4">
+        <div class="contrib-card">
+          <span class="card-icon">&#10067;</span>
+          <h4>Visual Self-Questioning</h4>
+          <p>
+            A novel training technique that leverages highly relevant question contexts in
+            instruction data. The SQ learning task promotes LLMs to understand image-question
+            relationships, enhancing vision-language alignment <b>without needing new data</b>.
+          </p>
+        </div>
+      </div>
+      <div class="column is-4">
+        <div class="contrib-card">
+          <span class="card-icon">&#128300;</span>
+          <h4>Lightweight Architecture</h4>
+          <p>
+            A tuning architecture consisting of <b>ViT-LoRA</b>, <b>LLM-LoRA</b>, and a
+            <b>prototype extractor</b> that enhances vision embeddings through learned clusters
+            with meaningful semantic information, all with significantly fewer trainable parameters.
+          </p>
+        </div>
+      </div>
+      <div class="column is-4">
+        <div class="contrib-card">
+          <span class="card-icon">&#128200;</span>
+          <h4>State-of-the-Art Results</h4>
+          <p>
+            SQ-LLaVA outperforms existing visual instruction tuning methods on visual
+            question-answering, visual instruction benchmarks, and zero-shot image captioning
+            across 9 out of 10 evaluation tasks.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== METHOD ==================== -->
+<section class="section" style="background: var(--surface);">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Method</h2>
+    <div class="section-bar"></div>
+
+    <!-- TODO: Replace with Figure 3 from the paper (model architecture).
+         Save as: ./static/images/architecture.png -->
+    <div class="fig-box" style="margin-bottom: 24px;">
+      <img src="./static/images/architecture.png" alt="SQ-LLaVA model architecture">
+    </div>
+    <p class="fig-cap has-text-centered" style="margin-bottom: 32px;">
+      <b>Figure 3:</b> SQ-LLaVA architecture. A prototype extractor enhances visual embeddings from
+      the vision encoder. A new token <code>[vusr]</code> instructs the LLM to perform visual
+      self-questioning, treating questioning as an additional training objective beyond answering.
+    </p>
+
+    <div class="stage-block">
+      <h3><span class="stage-num">&#127959;</span> Architecture Overview</h3>
+      <div class="content has-text-justified">
+        <p>
+          SQ-LLaVA consists of four main components:
+        </p>
+        <p>
+          <b>1) Vision Encoder:</b> A pre-trained CLIP-ViT that extracts a sequence embedding
+          of image tokens Z<sub>v</sub> for an input image.<br>
+          <b>2) Prototype Extractor:</b> A lightweight module &phi;(&middot;) that learns visual clusters via
+          iterative Expectation-Maximization with K=256 cluster centers and T=2 iterations, enhancing the original
+          image tokens with semantic grouping information.<br>
+          <b>3) Projection Block:</b> A two-layer linear projector W(&middot;) that maps enhanced image
+          tokens to the language domain.<br>
+          <b>4) Instruction LLM:</b> Pre-trained Vicuna, which predicts the next token given the
+          previous embedding sequence.
+        </p>
+      </div>
+    </div>
+
+    <div class="stage-block">
+      <h3><span class="stage-num">&#10067;</span> Visual Self-Questioning Instruction</h3>
+      <div class="content has-text-justified">
+        <p>
+          Unlike existing visual instruction tuning that focuses solely on answer prediction,
+          SQ-LLaVA treats <b>questioning as a new learning objective</b>. We introduce a
+          special token <code>[vusr]</code> (Virtual User) that instructs the LLM to generate
+          image-related questions. This is, to the best of our knowledge, the <b>first practice</b>
+          in the field of visual instruction tuning.
+        </p>
+        <p>
+          Each conversation turn is constructed as either a standard QA pair (with <code>[usr]</code>
+          and <code>[aswr]</code> tokens) or a self-questioning pair (with <code>[vusr]</code> and
+          <code>[aswr]</code> tokens). A random threshold &delta;=0.5 controls the proportion of
+          self-questioning pairs in each conversation. The model learns to ask questions in a
+          <b>zero-shot manner</b> — without any in-context examples or human language instructions,
+          using only the <code>[vusr]</code> token as a prompt.
+        </p>
+      </div>
+
+      <!-- TODO: Replace with Figure 4 from the paper (input sequence format).
+           Save as: ./static/images/input_sequence.png -->
+      <div class="fig-box" style="max-width: 650px; margin: 16px auto 0 auto;">
+        <img src="./static/images/input_sequence.png" alt="SQ-LLaVA input sequence format">
+      </div>
+      <p class="fig-cap has-text-centered">
+        <b>Figure 4:</b> Input sequence format. The model is trained to predict questions, answers,
+        and where to stop. <code>[vusr]</code> signals the self-questioning instruction.
+      </p>
+    </div>
+
+    <div class="stage-block">
+      <h3><span class="stage-num">&#128300;</span> Enhanced Visual Representation via Prototypes</h3>
+      <div class="content has-text-justified">
+        <p>
+          The prototype extractor recognizes and groups similar patterns of visual information
+          from the latent space. It uses iterative EM clustering (T=2 iterations) with K=256
+          randomly initialized cluster centers. Three trainable linear layers (query, key, value)
+          project the prototypes and image tokens for soft cluster assignment.
+        </p>
+        <p>
+          After extraction, each image token is updated by a weighted sum over all prototypes
+          based on normalized cosine similarity, aggregating entities with shared semantic
+          attributes (e.g., "grass", "dog"). This enhances contextual understanding without
+          requiring pixel-wise supervision.
+        </p>
+      </div>
+    </div>
+
+    <div class="stage-block">
+      <h3><span class="stage-num">1</span> Stage 1: Pre-training for Vision-Language Alignment</h3>
+      <div class="content has-text-justified">
+        <p>
+          The vision encoder and LLM are frozen. Only the prototype extractor &phi; and the
+          projection block W are trained on image-description pairs. The goal is to maximize
+          the probability of predicting image descriptions given the image tokens. Pre-training
+          uses AdamW optimizer with learning rate 2&times;10<sup>-3</sup> and a global batch size
+          of 256 for one epoch.
+        </p>
+      </div>
+    </div>
+
+    <div class="stage-block">
+      <h3><span class="stage-num">2</span> Stage 2: Fine-tuning with Self-Questioning</h3>
+      <div class="content has-text-justified">
+        <p>
+          Both the vision encoder and LLM are unfrozen for joint optimization using LoRA
+          adapters for efficiency. The learnable parameters include LLM-LoRA (rank=128, &alpha;=256),
+          ViT-LoRA (rank=32, &alpha;=64), the prototype extractor, and the projection block.
+        </p>
+        <p>
+          The model is trained with two objectives simultaneously: <b>Self-questioning</b>
+          (predicting the next question given the image and conversation history) and
+          <b>Answering</b> (predicting the answer given the image, history, and question).
+          Fine-tuning uses a global batch size of 128, learning rate 2&times;10<sup>-4</sup> for
+          LoRA and 2&times;10<sup>-5</sup> for other layers, for one epoch.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== MAIN RESULTS ==================== -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Results: Visual Question Answering</h2>
+    <div class="section-bar"></div>
+
+    <div class="content has-text-justified" style="max-width: 800px; margin: 0 auto 24px auto;">
+      <p>
+        We evaluate on ten benchmarks covering VQA tasks, instruction tuning tasks, and
+        multilingual understanding. SQ-LLaVA trained on LLaVA data surpasses LLaVA-v1.5 on
+        9 out of 10 benchmarks at 7B scale, and SQ-LLaVA* trained on ShareGPT4V data
+        outperforms ShareGPT4V on 6 out of 10 benchmarks — all with significantly fewer
+        trainable parameters.
+      </p>
+    </div>
+
+    <div class="sq-table" style="margin-bottom: 16px; overflow-x: auto;">
+      <table class="table is-fullwidth" style="font-size: 0.82rem;">
+        <thead>
+          <tr>
+            <th>LLM</th><th>Model</th>
+            <th>VQA<sup>v2</sup></th><th>GQA</th><th>VizWiz</th><th>SQA<sup>I</sup></th><th>VQA<sup>T</sup></th>
+            <th>POPE</th><th>MM-Vet</th><th>LLaVA<sup>W</sup></th><th>MMB</th><th>MMB<sup>CN</sup></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="ref-row"><td rowspan="7">7B</td>
+            <td>InstructBLIP</td><td>-</td><td>49.2</td><td>34.5</td><td>60.5</td><td>50.1</td><td>-</td><td>26.2</td><td>60.9</td><td>36.0</td><td>23.7</td></tr>
+          <tr class="ref-row"><td>Qwen-VL</td><td>78.8</td><td>59.3</td><td>35.2</td><td>67.1</td><td>63.8</td><td>-</td><td>-</td><td>-</td><td>38.2</td><td>7.4</td></tr>
+          <tr class="ref-row"><td>Qwen-VL-chat</td><td>78.2</td><td>57.5</td><td>38.9</td><td>68.2</td><td>61.5</td><td>-</td><td>-</td><td>-</td><td>60.6</td><td>56.7</td></tr>
+          <tr><td>LLaVA-v1.5</td><td>78.5</td><td>62.0</td><td>50.0</td><td>66.8</td><td>58.2</td><td>85.9</td><td>30.5</td><td>63.4</td><td>64.3</td><td>58.3</td></tr>
+          <tr><td>ShareGPT4V</td><td><b>80.6</b></td><td><b>63.3</b></td><td><b>57.2</b></td><td>68.4</td><td><u>60.4</u></td><td>86.8</td><td><b>37.6</b></td><td><u>72.6</u></td><td><b>68.8</b></td><td><b>62.2</b></td></tr>
+          <tr class="ours-row"><td>SQ-LLaVA</td><td>79.2</td><td>62.8</td><td>54.0</td><td><u>68.9</u></td><td>58.6</td><td><b>87.7</b></td><td>32.5</td><td>66.3</td><td>66.2</td><td>58.1</td></tr>
+          <tr class="ours-row"><td>SQ-LLaVA*</td><td><u>80.3</u></td><td><u>63.7</u></td><td>55.3</td><td><b>70.5</b></td><td><b>60.5</b></td><td><u>87.2</u></td><td><b>37.6</b></td><td><b>74.3</b></td><td>66.6</td><td>60.0</td></tr>
+          <tr class="sep-row"><td colspan="12"></td></tr>
+          <tr class="ref-row"><td rowspan="5">13B</td>
+            <td>InstructBLIP</td><td>-</td><td>49.5</td><td>33.4</td><td>63.1</td><td>50.7</td><td>78.9</td><td>25.6</td><td>58.2</td><td>-</td><td>-</td></tr>
+          <tr><td>LLaVA-v1.5</td><td>80.0</td><td>63.3</td><td>53.6</td><td><b>71.6</b></td><td>58.2</td><td>85.9</td><td>35.4</td><td>70.7</td><td>67.7</td><td><b>63.6</b></td></tr>
+          <tr><td>ShareGPT4V</td><td><u>81.0</u></td><td><u>64.8</u></td><td>55.6</td><td>71.2</td><td><b>62.2</b></td><td>-</td><td><b>43.1</b></td><td><u>79.9</u></td><td>68.5</td><td><u>63.7</u></td></tr>
+          <tr class="ours-row"><td>SQ-LLaVA</td><td>80.1</td><td>63.6</td><td>54.6</td><td>69.8</td><td>60.2</td><td><b>87.7</b></td><td>35.5</td><td>74.6</td><td><u>68.7</u></td><td>62.0</td></tr>
+          <tr class="ours-row"><td>SQ-LLaVA*</td><td><b>81.3</b></td><td><b>65.0</b></td><td><b>58.2</b></td><td><u>71.5</u></td><td><u>61.9</u></td><td><u>87.4</u></td><td><u>39.7</u></td><td><b>80.7</b></td><td><b>68.5</b></td><td>62.5</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="fig-cap has-text-centered" style="margin-bottom: 30px;">
+      <b>Table 1:</b> Comparison with state-of-the-art on ten benchmarks. SQ-LLaVA trained on LLaVA data;
+      SQ-LLaVA* trained on ShareGPT4V data. <b>Bold</b> = best; <u>underlined</u> = second best.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== CAPTIONING ==================== -->
+<section class="section" style="background: var(--surface);">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Results: Image Captioning</h2>
+    <div class="section-bar"></div>
+
+    <div class="content has-text-justified" style="max-width: 800px; margin: 0 auto 20px auto;">
+      <p>
+        SQ-LLaVA achieves 73% and 66% averaged improvement over ClipCap and DiscriTune
+        on all datasets. Compared to LLaVA-v1.5, SQ-LLaVA achieves 2% averaged improvement,
+        and SQ-LLaVA* surpasses ShareGPT4V on Nocaps<sup>out</sup> and Conceptual datasets,
+        demonstrating adaptability to unseen domains.
+      </p>
+    </div>
+
+    <div class="columns is-centered">
+      <div class="column is-7">
+        <div class="sq-table" style="overflow-x: auto;">
+          <table class="table is-fullwidth" style="font-size: 0.84rem;">
+            <thead>
+              <tr><th>Model</th>
+                <th colspan="2" style="text-align:center !important;">Flickr30k</th>
+                <th colspan="2" style="text-align:center !important;">Nocaps<sup>out</sup></th>
+                <th colspan="2" style="text-align:center !important;">Conceptual</th></tr>
+              <tr><th></th><th>B@4</th><th>CIDEr</th><th>B@4</th><th>CIDEr</th><th>B@4</th><th>CIDEr</th></tr>
+            </thead>
+            <tbody>
+              <tr class="ref-row"><td>ClipCap</td><td>17.21</td><td>41.65</td><td>20.32</td><td>51.74</td><td>1.47</td><td>23.74</td></tr>
+              <tr class="ref-row"><td>DiscriTune</td><td>18.48</td><td>44.78</td><td>24.10</td><td>57.06</td><td>1.71</td><td>28.01</td></tr>
+              <tr><td>LLaVA-v1.5</td><td>28.67</td><td>81.27</td><td>35.78</td><td>103.56</td><td>2.79</td><td>39.20</td></tr>
+              <tr><td>ShareGPT4V</td><td><b>31.00</b></td><td><b>86.17</b></td><td><u>37.19</u></td><td><b>107.45</b></td><td>2.78</td><td>37.86</td></tr>
+              <tr class="ours-row"><td>SQ-LLaVA</td><td>29.88</td><td>83.51</td><td>36.21</td><td>105.42</td><td><u>2.90</u></td><td><u>39.49</u></td></tr>
+              <tr class="ours-row"><td>SQ-LLaVA*</td><td><u>31.49</u></td><td><u>83.14</u></td><td><b>37.20</b></td><td><u>107.42</u></td><td><b>2.91</b></td><td><b>41.24</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="fig-cap has-text-centered" style="margin-top: 8px;"><b>Table 2a:</b> Zero-shot image captioning.</p>
+      </div>
+      <div class="column is-5">
+        <div class="sq-table" style="overflow-x: auto;">
+          <table class="table is-fullwidth" style="font-size: 0.84rem;">
+            <thead>
+              <tr><th>Model</th>
+                <th colspan="2" style="text-align:center !important;">Zero-shot</th>
+                <th colspan="2" style="text-align:center !important;">Fine-tune</th></tr>
+              <tr><th></th><th>B@4</th><th>CIDEr</th><th>B@4</th><th>CIDEr</th></tr>
+            </thead>
+            <tbody>
+              <tr class="ref-row"><td>ClipCap</td><td>8.50</td><td>37.03</td><td>32.60</td><td>108.55</td></tr>
+              <tr class="ref-row"><td>DiscriTune</td><td>13.99</td><td>53.20</td><td>32.31</td><td>105.40</td></tr>
+              <tr class="ref-row"><td>eP-ALM</td><td>29.47</td><td>97.22</td><td>33.35</td><td>111.63</td></tr>
+              <tr class="ref-row"><td>MAPL</td><td>12.30</td><td>54.30</td><td>36.45</td><td>125.20</td></tr>
+              <tr><td>LLaVA-v1.5</td><td><b>29.96</b></td><td><b>111.46</b></td><td>-</td><td>-</td></tr>
+              <tr class="ours-row"><td>SQ-LLaVA</td><td><u>29.85</u></td><td><u>110.77</u></td><td><b>40.76</b></td><td><b>136.78</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="fig-cap has-text-centered" style="margin-top: 8px;"><b>Table 2b:</b> COCO captioning.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ==================== ABLATION ==================== -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Ablation Study</h2>
+    <div class="section-bar"></div>
+
+    <div class="content has-text-justified" style="max-width: 800px; margin: 0 auto 20px auto;">
+      <p>
+        We ablate three components — ViT-LoRA (V-LoRA), self-questioning (SQ), and prototype extractor
+        (Proto) — on two instruction datasets of different scales. Self-questioning brings a
+        <b>consistent performance boost</b> across all benchmarks. With all three components,
+        we achieve <b>+2.4%</b> average improvement on the smaller dataset and <b>+3.0%</b>
+        on the larger dataset.
+      </p>
+    </div>
+
+    <div class="sq-table" style="max-width: 750px; margin: 0 auto; overflow-x: auto;">
+      <table class="table is-fullwidth" style="font-size: 0.84rem;">
+        <thead>
+          <tr><th>PT</th><th>IT</th><th>V-LoRA</th><th>SQ</th><th>Proto</th>
+            <th>VizWiz</th><th>SQA<sup>I</sup></th><th>VQA<sup>T</sup></th><th>POPE</th><th>LLaVA<sup>W</sup></th><th>Avg.</th></tr>
+        </thead>
+        <tbody>
+          <tr><td rowspan="5">558K</td><td rowspan="5">665K</td>
+            <td>&#10007;</td><td>&#10007;</td><td>&#10007;</td><td>49.4</td><td>68.4</td><td>58.2</td><td>86.5</td><td>67.1</td><td>65.9</td></tr>
+          <tr><td>&#10003;</td><td>&#10007;</td><td>&#10003;</td><td>52.4</td><td>67.9</td><td>58.6</td><td>87.7</td><td>65.6</td><td>66.4</td></tr>
+          <tr><td>&#10003;</td><td>&#10003;</td><td>&#10007;</td><td>52.6</td><td>68.4</td><td>57.8</td><td>88.2</td><td>67.3</td><td>66.9</td></tr>
+          <tr><td>&#10007;</td><td>&#10003;</td><td>&#10003;</td><td>53.4</td><td>69.3</td><td>58.1</td><td>87.9</td><td>67.9</td><td>67.3</td></tr>
+          <tr class="ours-row"><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td><b>54.0</b></td><td><b>68.9</b></td><td><b>58.6</b></td><td>87.7</td><td><b>68.1</b></td><td><b>67.5</b></td></tr>
+          <tr class="sep-row"><td colspan="11"></td></tr>
+          <tr><td rowspan="5">1200K</td><td rowspan="5">700K</td>
+            <td>&#10007;</td><td>&#10007;</td><td>&#10007;</td><td>51.5</td><td>68.9</td><td>58.9</td><td>86.8</td><td>72.1</td><td>67.6</td></tr>
+          <tr><td>&#10003;</td><td>&#10007;</td><td>&#10003;</td><td>54.0</td><td>68.9</td><td>60.2</td><td>87.2</td><td>71.6</td><td>68.4</td></tr>
+          <tr><td>&#10003;</td><td>&#10003;</td><td>&#10007;</td><td>55.4</td><td>69.2</td><td>59.5</td><td>86.8</td><td>77.3</td><td>69.6</td></tr>
+          <tr><td>&#10007;</td><td>&#10003;</td><td>&#10003;</td><td>54.2</td><td>70.3</td><td>60.5</td><td>87.5</td><td>72.7</td><td>69.0</td></tr>
+          <tr class="ours-row"><td>&#10003;</td><td>&#10003;</td><td>&#10003;</td><td><b>55.3</b></td><td><b>70.5</b></td><td><b>60.5</b></td><td>87.2</td><td><b>74.3</b></td><td><b>69.6</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="fig-cap has-text-centered" style="margin-top: 8px;">
+      <b>Table 3:</b> Ablation study on two instruction datasets. SQ = self-questioning, Proto = prototype extractor.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== QUALITATIVE ==================== -->
+<section class="section" style="background: var(--surface);">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Qualitative Results</h2>
+    <div class="section-bar"></div>
+
+    <div class="content has-text-justified" style="max-width: 800px; margin: 0 auto 24px auto;">
+      <p>
+        SQ-LLaVA generates diverse, meaningful questions including multiple-choice, reasoning,
+        and tricky questions — all highly correlated with the visual content. Compared to
+        GPT-4V generated questions, SQ-LLaVA's questions show <b>higher diversity</b>
+        while requiring no explicit language instruction, only the <code>[vusr]</code> token.
+      </p>
+    </div>
+
+    <!-- TODO: Replace with Figure 5 from the paper (self-questioning comparison with GPT-4V).
+         Save as: ./static/images/self_questioning.png -->
+    <div class="fig-box" style="margin-bottom: 24px;">
+      <img src="./static/images/self_questioning.png" alt="Self-questioning comparison with GPT-4V">
+    </div>
+    <p class="fig-cap has-text-centered" style="margin-bottom: 30px;">
+      <b>Figure 5:</b> SQ-LLaVA generates questions with higher diversity than GPT-4V, including
+      multiple-choice and tricky questions that are highly image-relevant.
+    </p>
+
+    <!-- TODO: Replace with Figure 6 from the paper (detailed image description comparison).
+         Save as: ./static/images/detailed_description.png -->
+    <div class="fig-box" style="margin-bottom: 16px;">
+      <img src="./static/images/detailed_description.png" alt="Detailed image description comparison">
+    </div>
+    <p class="fig-cap has-text-centered">
+      <b>Figure 6:</b> SQ-LLaVA generates descriptions with concrete visual concepts
+      (e.g., "Hyundai", "small white dog", "Nikky Stephen") while LLaVA-v1.5 uses only
+      general concepts, and ShareGPT4V suffers from object hallucination.
+    </p>
+  </div>
+</section>
+
+<!-- ==================== BIBTEX ==================== -->
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title has-text-centered">BibTeX</h2>
+    <div class="section-bar"></div>
+    <pre><code>@inproceedings{sun2024sqllava,
+  title     = {SQ-LLaVA: Self-Questioning for Large Vision-Language Assistant},
+  author    = {Sun, Guohao and Qin, Can and Wang, Jiamian
+               and Chen, Zeyuan and Xu, Ran and Tao, Zhiqiang},
+  booktitle = {European Conference on Computer Vision (ECCV)},
+  year      = {2024},
+}</code></pre>
+  </div>
+</section>
+
+<!-- ==================== FOOTER ==================== -->
+<footer class="footer" style="padding: 28px 0;">
+  <div class="container">
+    <div class="content has-text-centered">
+      <a class="icon-link" href="https://arxiv.org/abs/2403.11299" style="margin: 0 8px;">
+        <i class="ai ai-arxiv" style="font-size: 1.3rem;"></i>
+      </a>
+      <a class="icon-link" href="https://github.com/heliossun/SQ-LLaVA" style="margin: 0 8px;">
+        <i class="fab fa-github" style="font-size: 1.3rem;"></i>
+      </a>
+    </div>
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content has-text-centered" style="font-size: 0.85rem; color: var(--text-body);">
+          <p>
+            This website is based on the
+            <a href="https://github.com/nerfies/nerfies.github.io">Nerfies</a> project page template,
+            licensed under
+            <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
